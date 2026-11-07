@@ -155,7 +155,7 @@
         if (r.error) { alert("Erro ao apagar: " + r.error.message); return; }
         location.reload();
       });
-    } }, "Excluir"));
+     }, "Excluir"));
 }
   }
 
