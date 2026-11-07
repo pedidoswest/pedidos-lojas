@@ -366,6 +366,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
           resumo,
           h("div", { class: "bar" },
             h("button", { type: "button", class: "btn ghost", onclick: copiarTabela }, "Copiar para colar no Excel"),
+            h("button", { type: "button", class: "btn ghost", onclick: baixarExcel }, "Baixar Excel"),
             h("div", { class: "bar" },
   h("label", { class: "lbl" }, "Categoria"),
   h("select", { class: "in", onchange: function(e){ S.catFiltro = e.target.value; self.show(true); } },
@@ -724,5 +725,36 @@ function excluirPedido(id){
   sb.from("pedidos").delete().eq("id", id).then(function(r){
     if(r.error){ alert("Erro ao apagar: " + r.error.message); return; }
     location.reload();
+  });
+  // Some da tela na hora, mesmo antes do reload
+  var cards = document.querySelectorAll('[data-id="' + id + '"]');
+  cards.forEach(function(c){ c.style.display = 'none'; });
+}
+
+function baixarExcel(){
+  sb.from("pedidos").select("*").order("created_at", {ascending: false}).then(function(r){
+    if(r.error){ alert("Erro ao baixar: " + r.error.message); return; }
+    var dados = r.data || [];
+    if(!dados.length){ alert("Nenhum pedido para baixar"); return; }
+    var colunas = Object.keys(dados[0]);
+    var linhas = [];
+    linhas.push(colunas.join(";"));
+    dados.forEach(function(p){
+      var linha = colunas.map(function(c){
+        var v = p[c] == null ? "" : String(p[c]).replace(/;/g, ",").replace(/\n/g, " ");
+        return '"' + v + '"';
+      });
+      linhas.push(linha.join(";"));
+    });
+    var csv = "\uFEFF" + linhas.join("\n");
+    var blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "pedidos.xls";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   });
 }
