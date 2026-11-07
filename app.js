@@ -336,7 +336,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
   XLSX.writeFile(wb, "pedidos-" + S.dia + ".xlsx");
   setMsg(mm, "Planilha gerada.", "ok");
 }
-    }
+
 
     var self = {
       el: h("section", { class: "stack" },
