@@ -365,7 +365,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
             nomeDia),
           resumo,
           h("div", { class: "bar" },
-            h("button", { type: "button", class: "btn ghost", onclick: copiarTabela }, "Copiar para colar no Excel"),
+
             h("button", { type: "button", class: "btn ghost", onclick: baixarExcel }, "Baixar Excel"),
             h("div", { class: "bar" },
   h("label", { class: "lbl" }, "Categoria"),
