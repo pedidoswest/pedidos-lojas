@@ -717,10 +717,20 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
         acessos.length ? h("div", null, acessos) : h("p", { class: "empty", text: "Nenhum acesso criado." })));
     return { el: el, show: function () {} };
   }
-
+async function excluirPedido(id){
+  if(!confirm("Excluir este pedido?")) return;
+  const { error } = await supabase.from("pedidos").delete().eq("id", id);
+  if(error){
+    alert("Erro ao excluir: " + error.message);
+    console.log(error);
+    return;
+  }
+  // tira da lista e força atualizar a página
+  location.reload();
+}
   init();
 })();
-function excluirPedido(id){
+
   if(!confirm("Excluir este pedido?")) return;
   sb.from("pedidos").delete().eq("id", id).then(function(r){
     if(r.error){ alert("Erro ao apagar: " + r.error.message); return; }
