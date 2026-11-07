@@ -719,17 +719,22 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
   }
 async function excluirPedido(id){
   if(!confirm("Excluir este pedido?")) return;
-  const { error } = await supabase.from("pedidos").delete().eq("id", id);
-  if(error){
-    alert("Erro ao excluir: " + error.message);
-    console.log(error);
-    return;
+  try{
+    var cfg = window.APP_CONFIG || {};
+    var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    const { error } = await client.from("pedidos").delete().eq("id", id);
+    if(error){
+      alert("Erro ao excluir: " + error.message);
+      console.log(error);
+      return;
+    }
+    location.reload();
+  }catch(e){
+    alert("Erro ao excluir: " + e.message);
+    console.log(e);
   }
-
-  // tira da lista e força atualizar a página
-  location.reload();
 }
-    window.excluirPedido = excluirPedido;
+window.excluirPedido = excluirPedido;
   init();
 })();
 
