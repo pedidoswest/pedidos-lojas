@@ -224,7 +224,7 @@
     self.show = async function () {
       if (!self.stale) return;
       lista.replaceChildren(h("p", { class: "empty", text: "Carregando…" }));
-      var r = await sb.from("pedidos").select("*").order("criado_em", { ascending: false }).limit(100);
+    var r = await sb.from("pedidos").select("*").eq("loja_id", S.perfil.loja_id).order("criado_em", { ascending: false }).limit(100);
       lista.replaceChildren();
       if (r.error) { lista.append(h("p", { class: "empty", text: erroDb(r.error) })); return; }
       self.stale = false;
