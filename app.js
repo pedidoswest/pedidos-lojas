@@ -400,7 +400,9 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
 
       lista.replaceChildren();
       if (!S.carregouDia) { lista.append(h("p", { class: "empty", text: "Carregando pedidos…" })); return; }
+     
       S.lojas.forEach(function (l) {
+        if (S.lojaFiltro && S.lojaFiltro !== "TODAS" && String(l.id) !== String(S.lojaFiltro)) return;
         var das = os.filter(function (o) { return o.loja_id === l.id; });
         if (S.soUrgentes) das = das.filter(temUrgente);
         if (S.soUrgentes && !das.length) return;
@@ -408,7 +410,8 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
           h("div", { class: "loja-h" }, h("h3", { text: l.nome }),
             das.length ? h("span", { class: "pill ok", text: das.length + (das.length === 1 ? " pedido" : " pedidos") }) : h("span", { class: "pill wait", text: "Sem pedido" })));
         das.forEach(function (o) {
-          var itens = S.soUrgentes ? o.itens.filter(function (i) { return i.urgente; }) : o.itens;
+         var itens = o.itens.filter(function (i) { if (S.soUrgentes && !i.urgente) return false; var cat = S.catFiltro || S.categoriaFiltro; if (cat && cat !== "GERAL" && cat !== "TODAS" && (i.categoria || i.cat) !== cat) return false; return true; });
+          if (!itens.length) return;
           bloco.append(orderCard(o, itens, loginDe(o.criado_por)));
         });
         lista.append(bloco);
@@ -557,7 +560,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
       async function remover() {
         if (!rem.dataset.conf) {
           rem.dataset.conf = "1"; rem.textContent = "Remover?"; rem.classList.add("conf");
-          setTimeout(function () { delete rem.dataset.conf; rem.textContent = "×"; rem.classList.remove("conf"); }, 3000);
+          setTimeout(function () { delete rem.dataset.conf; rem.textContent = "×"; rem.classList.remove("conf"); }, 3400);
           return;
         }
         var res = await sb.from("estoque").delete().eq("id", r.id).select();
