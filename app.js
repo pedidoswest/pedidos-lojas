@@ -725,9 +725,11 @@ async function excluirPedido(id){
     console.log(error);
     return;
   }
+
   // tira da lista e força atualizar a página
   location.reload();
 }
+    window.excluirPedido = excluirPedido;
   init();
 })();
 
