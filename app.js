@@ -738,15 +738,7 @@ window.excluirPedido = excluirPedido;
   init();
 })();
 
-  if(!confirm("Excluir este pedido?")) return;
-  sb.from("pedidos").delete().eq("id", id).then(function(r){
-    if(r.error){ alert("Erro ao apagar: " + r.error.message); return; }
-    location.reload();
-  });
-  // Some da tela na hora, mesmo antes do reload
-  var cards = document.querySelectorAll('[data-id="' + id + '"]');
-  cards.forEach(function(c){ c.style.display = 'none'; });
-}
+
 
 function baixarExcel(){
   sb.from("pedidos").select("*").order("created_at", {ascending: false}).then(function(r){
