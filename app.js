@@ -149,13 +149,7 @@
     o.categoria && o.solicitante ? h("span", { text: "Pedido por: " + o.solicitante }) : null),
     h("div", null, itens.map(itemRow)),
     o.obs ? h("div", { class: "obs", text: o.obs }) : null,
-        h("button", { type: "button", class: "btn danger sm", style: "margin-top:8px", onclick: function(){
-      if (!confirm("Apagar este pedido?")) return;
-      sb.from("pedidos").delete().eq("id", o.id).then(function(r){
-        if (r.error) { alert("Erro ao apagar: " + r.error.message); return; }
-        location.reload();
-      });
-    } }, "Excluir")
+       h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido(o.id); } }, "Excluir")
   ]);
 }
 
@@ -710,3 +704,10 @@
 
   init();
 })();
+function excluirPedido(id){
+  if(!confirm("Excluir este pedido?")) return;
+  sb.from("pedidos").delete().eq("id", id).then(function(r){
+    if(r.error){ alert("Erro ao apagar: " + r.error.message); return; }
+    location.reload();
+  });
+}
