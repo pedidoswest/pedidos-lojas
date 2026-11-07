@@ -248,7 +248,23 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
     return rows;
   }
   function linhasPlanilha() { return linhasDe(ordensDoDia()); }
-
+ function copiarTabela() {
+  const tabela = document.querySelector('table');
+  if (!tabela) {
+    alert('Nenhuma tabela para copiar');
+    return;
+  }
+  let texto = '';
+  tabela.querySelectorAll('tr').forEach(tr => {
+    const celulas = [...tr.querySelectorAll('th, td')].map(td =>
+      td.innerText.replace(/\t/g, ' ').replace(/\n/g, ' ')
+    );
+    texto += celulas.join('\t') + '\n';
+  });
+  navigator.clipboard.writeText(texto).then(() => {
+    alert('Copiado! Agora é só colar no Excel (Ctrl+V)');
+  });
+}
   function buildDia() {
     var data = h("input", { type: "date", class: "in", id: "dia", "aria-label": "Dia dos pedidos", onchange: function (e) { if (e.target.value) { S.dia = e.target.value; copiaLimpa(); self.show(); } } });
     var nomeDia = h("span", { class: "muted" });
