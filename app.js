@@ -143,12 +143,20 @@
       it.urgente ? h("span", { class: "pill urgent", text: "Urgente" }) : null);
   }
   function orderCard(o, itens, quem) {
-    return h("div", { class: "order" },
-      h("div", { class: "order-h" }, h("strong", { text: fmtData(o.data) + " às " + fmtHora(o.criado_em) }), quem ? h("span", { text: quem }) : null,
-        o.categoria ? h("span", { class: "pill cat", text: o.categoria }) : null,
-        o.categoria && o.solicitante ? h("span", { text: "Pedido por: " + o.solicitante }) : null),
-      h("div", null, itens.map(itemRow)),
-      o.obs ? h("div", { class: "obs", text: o.obs }) : null);
+  return h("div", { class: "order" },
+    h("div", { class: "order-h" }, h("strong", { text: fmtData(o.data) + " às " + fmtHora(o.criado_em) }), quem,
+    o.categoria ? h("span", { class: "pill_cat", text: o.categoria }) : null,
+    o.categoria && o.solicitante ? h("span", { text: "Pedido por: " + o.solicitante }) : null),
+    h("div", null, itens.map(itemRow)),
+    o.obs ? h("div", { class: "obs", text: o.obs }) : null,
+    h("button", { type: "button", class: "btn danger sm", style: "margin-top:8px", onclick: function(){
+      if (!confirm("Apagar este pedido?")) return;
+      sb.from("pedidos").delete().eq("id", o.id).then(function(r){
+        if (r.error) { alert("Erro ao apagar: " + r.error.message); return; }
+        location.reload();
+      });
+    } }, "Excluir"));
+}
   }
 
   /* ---------- loja: novo pedido ---------- */
@@ -259,26 +267,81 @@
     function copiaLimpa() { copiaBox.replaceChildren(); }
     function irPara(d) { S.dia = d; copiaLimpa(); self.show(); }
 
-    function baixarExcel() {
-      var rows = linhasPlanilha();
-      if (!rows.length) { setMsg(mm, "Não há pedidos neste dia."); return; }
-      if (!window.XLSX) { setMsg(mm, "Não foi possível carregar o gerador de Excel. Use “Copiar para colar no Excel”.", "err"); return; }
-      var ws = XLSX.utils.aoa_to_sheet([HEAD].concat(rows));
-      ws["!cols"] = [{ wch: 11 }, { wch: 14 }, { wch: 12 }, { wch: 36 }, { wch: 10 }, { wch: 28 }, { wch: 7 }, { wch: 12 }, { wch: 22 }, { wch: 18 }];
-      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
-      XLSX.writeFile(wb, "pedidos-" + S.dia + ".xlsx");
-      setMsg(mm, "Planilha gerada.", "ok");
-    }
-    async function copiarTabela() {
-      var rows = linhasPlanilha();
-      if (!rows.length) { setMsg(mm, "Não há pedidos neste dia."); return; }
-      var tsv = [HEAD].concat(rows).map(function (r) { return r.map(function (c) { return String(c).replace(/[\t\r\n]+/g, " "); }).join("\t"); }).join("\n");
-      try { await navigator.clipboard.writeText(tsv); setMsg(mm, "Tabela copiada. Cole na planilha com Ctrl+V.", "ok"); copiaLimpa(); }
-      catch (e) {
-        var ta = h("textarea", { class: "in", readonly: true, "aria-label": "Tabela para copiar", style: "font-family:var(--font-mono);font-size:13px;min-height:120px" });
-        ta.value = tsv; copiaBox.replaceChildren(ta); ta.focus(); ta.select();
-        setMsg(mm, "Selecione o texto abaixo e copie.");
+  function baixarExcel() {
+  var os = ordensDoDia();
+  if (S.catFiltro && S.catFiltro !== "TODAS") {
+    os = os.filter(function(o){ return (o.categoria || "GERAL") === S.catFiltro; });
+  }
+  if (S.lojaFiltro && S.lojaFiltro !== "TODAS") {
+    os = os.filter(function(o){ return String(o.loja_id) === String(S.lojaFiltro); });
+  }
+  if (!os.length) { setMsg(mm, "Não há pedidos neste filtro."); return; }
+  if (!window.XLSX) { setMsg(mm, "Não foi possível carregar o gerador de Excel.", "err"); return; }
+
+  var linhas = [];
+  linhas.push(["Data: " + fmtData(S.dia), "", ""]);
+  linhas.push(["", "", ""]);
+  linhas.push(["Loja", "Produtos", "Observação"]);
+
+  S.lojas.forEach(function(l){
+    var das = os.filter(function(o){ return o.loja_id === l.id; });
+    if (!das.length) return;
+    var primeira = true;
+    das.forEach(function(o){
+      (o.itens || []).forEach(function(it){
+        linhas.push([primeira ? l.nome : "", it.qtd + " " + it.produto, primeira ? (o.obs || "") : ""]);
+        primeira = false;
+      });
+    });
+    linhas.push(["", "", ""]); // ESPAÇO entre lojas
+  });
+
+  var ws = XLSX.utils.aoa_to_sheet(linhas);
+  ws["!cols"] = [{ wch: 14 }, { wch: 38 }, { wch: 30 }];
+  ws["!pageSetup"] = { orientation: "portrait", paperSize: 9, fitToPage: 1, fitToWidth: 1, fitToHeight: 0 };
+  ws["!printOptions"] = { horizontalCentered: true };
+  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+
+  var borda = {
+    top: { style: "thin", color: { rgb: "B0B0B0" } },
+    bottom: { style: "thin", color: { rgb: "B0B0B0" } },
+    left: { style: "thin", color: { rgb: "B0B0B0" } },
+    right: { style: "thin", color: { rgb: "B0B0B0" } }
+  };
+  var range = XLSX.utils.decode_range(ws["!ref"]);
+  for (var r = 0; r <= range.e.r; r++) {
+    for (var c = 0; c <= 2; c++) {
+      var addr = XLSX.utils.encode_cell({ r: r, c: c });
+      var cell = ws[addr];
+      if (!cell) continue;
+      cell.s = cell.s || {};
+      if (r === 0) {
+        cell.s.font = { bold: true, sz: 14 };
+        cell.s.alignment = { horizontal: "left", vertical: "center" };
+      } else if (r === 2) {
+        cell.s.font = { bold: true, sz: 11, color: { rgb: "FFFFFF" } };
+        cell.s.fill = { fgColor: { rgb: "0A0A0A" } };
+        cell.s.alignment = { horizontal: "center", vertical: "center" };
+        cell.s.border = borda;
+      } else if (r > 2) {
+        var v0 = ws[XLSX.utils.encode_cell({ r: r, c: 0 })];
+        var v1 = ws[XLSX.utils.encode_cell({ r: r, c: 1 })];
+        var v2 = ws[XLSX.utils.encode_cell({ r: r, c: 2 })];
+        var ehEspaco = (!v0 || !v0.v) && (!v1 || !v1.v) && (!v2 || !v2.v);
+        if (ehEspaco) continue;
+        cell.s.font = { sz: 11 };
+        cell.s.border = borda;
+        cell.s.alignment = { vertical: "center", wrapText: true, horizontal: c === 0 ? "center" : "left" };
+        if (r % 2 === 0) cell.s.fill = { fgColor: { rgb: "F2F2F2" } };
       }
+    }
+  }
+  ws["!rows"] = [{ hpt: 24 }, { hpt: 8 }, { hpt: 20 }];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
+  XLSX.writeFile(wb, "pedidos-" + S.dia + ".xlsx");
+  setMsg(mm, "Planilha gerada.", "ok");
+}
     }
 
     var self = {
@@ -292,9 +355,21 @@
             nomeDia),
           resumo,
           h("div", { class: "bar" },
-            h("button", { type: "button", class: "btn", onclick: baixarExcel }, "Baixar Excel do dia"),
-            h("button", { type: "button", class: "btn ghost", onclick: function () { window.print(); } }, "Imprimir"),
+          ,
             h("button", { type: "button", class: "btn ghost", onclick: copiarTabela }, "Copiar para colar no Excel"),
+            h("div", { class: "bar" },
+  h("label", { class: "lbl" }, "Categoria"),
+  h("select", { class: "in", onchange: function(e){ S.catFiltro = e.target.value; self.show(true); } },
+    h("option", { value: "TODAS" }, "Todas as categorias"),
+    h("option", { value: "GERAL" }, "Pedido geral"),
+    CATEGORIAS.map(function(c){ return h("option", { value: c }, c); })
+  ),
+  h("label", { class: "lbl" }, "Loja"),
+  h("select", { class: "in", onchange: function(e){ S.lojaFiltro = e.target.value; self.show(true); } },
+    h("option", { value: "TODAS" }, "Todas as lojas"),
+    S.lojas.map(function(l){ return h("option", { value: String(l.id) }, l.nome); })
+  )
+),
             h("label", { class: "switch" }, sw, "Só urgentes")),
           mm, copiaBox),
         tituloPrint, lista)
