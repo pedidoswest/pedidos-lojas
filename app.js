@@ -150,7 +150,7 @@
     h("div", null, itens.map(itemRow)),
     o.obs ? h("div", { class: "obs", text: o.obs }) : null,
 h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (o.id); } }, "Excluir"),
-  ]);
+  );
 }
 
   /* ---------- loja: novo pedido ---------- */
