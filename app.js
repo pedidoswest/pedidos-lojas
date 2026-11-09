@@ -166,7 +166,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
     var solic = h("input", { class: "in", id: "solic", maxlength: "80", autocomplete: "off", placeholder: "Nome de quem fez o pedido", "aria-label": "Nome de quem fez o pedido", oninput: function (e) { e.target.classList.remove("bad"); } });
     var solicWrap = h("div", { hidden: true }, h("label", { class: "lbl", for: "solic" }, "Nome de quem fez o pedido"), solic);
     var cat = h("select", { class: "in", id: "cat", "aria-label": "Tipo de pedido", onchange: function () { solicWrap.hidden = !cat.value; if (!cat.value) solic.value = ""; solic.classList.remove("bad"); } },
-      h("option", { value: "" }, "Pedido geral"), CATEGORIAS.map(function (c) { return h("option", { value: c }, c); }));
+    CATEGORIAS.map(function (c) { return h("option", { value: c }, c); }));
 
     function renderRows(focusLast) {
       rowsEl.replaceChildren();
