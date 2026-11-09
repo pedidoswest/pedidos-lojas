@@ -371,7 +371,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
   h("label", { class: "lbl" }, "Categoria"),
   h("select", { class: "in", onchange: function(e){ S.catFiltro = e.target.value; self.show(true); } },
     h("option", { value: "TODAS" }, "Todas as categorias"),
-    h("option", { value: "GERAL" }, "Pedido geral"),
+
     CATEGORIAS.map(function(c){ return h("option", { value: c }, c); })
   ),
   h("label", { class: "lbl" }, "Loja"),
