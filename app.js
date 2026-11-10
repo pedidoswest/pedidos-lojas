@@ -555,9 +555,20 @@ validacoes.push({
     var resumo = h("div", { class: "bar" });
     var lista = h("div", { class: "est-lista" });
     var rel = h("div", { class: "print-only" });
-    var inProd = h("input", { class: "in", id: "est-prod", maxlength: "120", autocomplete: "off", placeholder: "Ex.: Linguiça Perdigão", "aria-label": "Produto" });
-    var inQtd = h("input", { class: "in", id: "est-qtd", inputmode: "decimal", autocomplete: "off", placeholder: "0", "aria-label": "Quantidade em estoque" });
-    var inUn = h("select", { class: "in", id: "est-un", "aria-label": "Unidade" }, h("option", { value: "cx" }, UNID.cx), h("option", { value: "kg" }, UNID.kg));
+    var inCat = h("select", { id: "est-cat", "aria-label": "Categoria" },
+  h("option", { value: "CONGELADOR" }, "CONGELADOR"),
+  h("option", { value: "LINGUIÇAS" }, "LINGUIÇAS"),
+  h("option", { value: "PAO DE ALHO/QUEIJO COALHO" }, "PÃO DE ALHO / QUEIJO COALHO"),
+  h("option", { value: "CARVAO" }, "CARVÃO"),
+  h("option", { value: "CAMARA FRIA" }, "CÂMARA FRIA")
+);
+var inProd = h("input", { id: "est-prod", placeholder: "Produto", ... }),
+    inQtd = h("input", { id: "est-qtd", ... }),
+    inUn = h("select", { id: "est-un" },
+      h("option", { value: "cx" }, "CAIXA"),
+      h("option", { value: "kg" }, "KG"),
+      h("option", { value: "un" }, "UNIDADE")
+    );
     inProd.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inQtd.focus(); } });
     inQtd.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); adicionar(); } });
 
@@ -571,7 +582,7 @@ validacoes.push({
       rel.append(relEstoque(lojaId, rows));
     }
     function pintar() {
-      lista.replaceChildren();
+      lista.replaceChildren();h("option", { value: "un" }, "UNIDADE")
       if (falha && rows === null) { lista.append(h("p", { class: "empty", text: "Não foi possível carregar o estoque. Confira a internet e recarregue." })); pintarResumo(); return; }
       if (rows === null) { lista.append(h("p", { class: "empty", text: "Carregando…" })); return; }
       if (!rows.length) lista.append(h("p", { class: "empty", text: "Nenhum produto no estoque. Adicione o primeiro acima." }));
@@ -602,44 +613,45 @@ validacoes.push({
       }
       async function remover() {
         if (!rem.dataset.conf) {
-          rem.dataset.conf = "1"; rem.textContent = "Remover?"; rem.classList.add("conf");
+el.append(h("span", { class: "est-cat", text: r.categoria || "" }), h("strong", { class: "est-nome", text: r.produto }), q, u, flag, rem);
           setTimeout(function () { delete rem.dataset.conf; rem.textContent = "×"; rem.classList.remove("conf"); }, 3400);
           return;
         }
-        var res = await sb.from("estoque").delete().eq("id", r.id).select();
-        if (res.error || !res.data || !res.data.length) { setMsg(m, res.error ? erroDb(res.error) : "Você não tem permissão para esta ação.", "err"); return; }
-        rows = rows.filter(function (x) { return x.id !== r.id; });
-        setMsg(m, "Produto removido.", "ok");
-        pintar();
-      }
-      marca();
-      el.append(h("strong", { class: "est-nome", text: r.produto }), q, u, flag, rem);
-      return el;
-    }
-    async function carregar() {
-      var r = await sb.from("estoque").select("*").eq("loja_id", lojaId).order("produto");
-      if (r.error) { falha = true; setMsg(m, erroDb(r.error), "err"); }
-      else { falha = false; rows = r.data || []; }
-      pintar();
-    }
-    async function adicionar() {
-      inProd.classList.remove("bad"); inQtd.classList.remove("bad");
-      var prod = inProd.value.trim(), q = num(inQtd.value);
-      if (!prod) { inProd.classList.add("bad"); setMsg(m, "Informe o produto.", "err"); return; }
-      if (inQtd.value.trim() === "" || !isFinite(q) || q < 0) { inQtd.classList.add("bad"); setMsg(m, "Informe uma quantidade válida (0 ou mais).", "err"); return; }
-      if (rows === null) { setMsg(m, "Aguarde o estoque carregar.", "err"); return; }
-      var ja = rows.find(function (r) { return r.produto.trim().toLowerCase() === prod.toLowerCase(); });
-      add.disabled = true; setMsg(m, "Salvando…");
-      var res = ja
-        ? await sb.from("estoque").update({ quantidade: q, unidade: inUn.value }).eq("id", ja.id).select()
-        : await sb.from("estoque").insert({ loja_id: lojaId, produto: prod, quantidade: q, unidade: inUn.value }).select();
-      add.disabled = false;
-      if (res.error || !res.data || !res.data.length) { setMsg(m, res.error ? erroDb(res.error) : "Você não tem permissão para esta ação.", "err"); return; }
-      inProd.value = ""; inQtd.value = "";
-      setMsg(m, ja ? "Produto atualizado." : "Produto adicionado.", "ok");
-      inProd.focus();
-      await carregar();
-    }
+      async function carregar() {
+  var data = S.dia;
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var limite = new Date(hoje); limite.setDate(limite.getDate() - 7);
+  var limiteStr = limite.toISOString().slice(0,10);
+
+  // Apaga o que tem mais de 7 dias
+  await sb.from("estoque").delete().eq("loja_id", lojaId).lt("data_ref", limiteStr);
+
+  var r = await sb.from("estoque").select("*").eq("loja_id", lojaId).eq("data_ref", data).order("categoria").order("produto");
+  if (r.error) { falha = true; setMsg(m, erroDb(r.error), "err"); }
+  else { falha = false; rows = r.data || []; }
+  pintar();
+}
+
+async function adicionar() {
+  inProd.classList.remove("bad"); inQtd.classList.remove("bad");
+  var prod = inProd.value.trim(), q = num(inQtd.value);
+  if (!prod) { inProd.classList.add("bad"); setMsg(m, "Informe o produto.", "err"); return; }
+  if (inQtd.value.trim() === "" || !isFinite(q) || q < 0) { inQtd.classList.add("bad"); setMsg(m, "Informe uma quantidade válida.", "err"); return; }
+  if (rows === null) { setMsg(m, "Aguarde o carregamento.", "err"); return; }
+  var cat = inCat.value;
+  var ja = rows.find(function (r) { return r.produto.trim().toLowerCase() === prod.toLowerCase() && r.categoria === cat; });
+  add.disabled = true; setMsg(m, "Salvando...");
+  var data = S.dia;
+  var res = ja
+    ? await sb.from("estoque").update({ quantidade: q, unidade: inUn.value, categoria: cat, data_ref: data }).eq("id", ja.id).select()
+    : await sb.from("estoque").insert({ loja_id: lojaId, produto: prod, quantidade: q, unidade: inUn.value, categoria: cat, data_ref: data }).select();
+  add.disabled = false;
+  if (res.error || !res.data || !res.data.length) { setMsg(m, res.error ? erroDb(res.error) : "Você não tem permissão para salvar.", "err"); return; }
+  inProd.value = ""; inQtd.value = "";
+  setMsg(m, ja ? "Produto atualizado." : "Produto adicionado.", "ok");
+  inProd.focus();
+  await carregar();
+}
     var add = h("button", { type: "button", class: "btn", onclick: adicionar }, "Adicionar");
 
     var el = h("section", { class: "stack" },
