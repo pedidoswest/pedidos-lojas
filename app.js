@@ -5,6 +5,13 @@
   var DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
   var HEAD = ["Data", "Loja", "Quantidade", "Produto", "Urgente", "Observação do pedido", "Hora", "Login", "Categoria", "Pedido por"];
   var CATEGORIAS = ["CONGELADOR", "LINGUIÇAS", "CARVÃO", "PÃO DE ALHO / QUEIJO COALHO"];
+  var LOJAS_MODELO = ["AREAL","BANDEIRANTE","BICALHO","ESTRUTURAL","RECANTO I","SAMAMBAIA","SAMAMBAIA SUL","RIACHO FUNDO","TAGUACENTER","RECANTO II","VILA DIMAS"];
+var PRODUTOS_POR_CATEGORIA = {
+  "CONGELADOR": ["ASA DE FRANGO","COXINHA DA ASA","COXA / SOBRECOXA","FILE DE FRANGO","PEITO DE FRANGO","FRANGO INTEIRO","GALINHA SABOROSA","MOELA","CORACAO DE FRANGO","PE DE FRANGO","PESCOCO DE PERU","FIGADO BOVINO","LINGUA BOVINA","CORACAO BOVINO","CUPIM A","CUPIM B","RABADA","LAGARTO","CHARQUE BOVINO","MOCOTO BOVINO","BANDA SUINA","CARRE SUINO","COSTELINHA FRESCA","COSTELINHA SALGADA","JOELHINHO SALGADO","LOMBO SALGADO","ORELHA SALGADA","PE SALGADO","RABO SALGADO","TOUCINHO","BUCHO","BATATA PALITO LAR","BATATA BEM BRASIL 1,05KG","BATATA MC CAIN","PAO DE ALHO TRADICIONAL","PAO DE ALHO APIM","PAO DE ALHO BOLA","NUGGETS","HAMBURGUER BOUA","AVE FAMILIA","SALSICHA","CALABRESA","LINGUICA SUINA","LINGUICA PAIO","LINGUICA SUPER FRANGO","LINGUICA SEARA","BACON","COSTELA DEFUMADA","FRISSURA","COXA DORSAL"],
+  "LINGUIÇAS": ["LINGUICA SUINA","LINGUICA PAIO","LINGUICA SUPER FRANGO","LINGUICA SEARA","CALABRESA","SALSICHA"],
+  "CARVÃO": ["CARVAO"],
+  "PÃO DE ALHO / QUEIJO COALHO": ["PAO DE ALHO TRADICIONAL","PAO DE ALHO APIM","PAO DE ALHO BOLA","QUEIJO COALHO"]
+};
   var LIM_CX = 9, LIM_KG = 80;               // estoque em excesso: mais de 9 caixas ou mais de 80 KG
   var UNID = { cx: "Caixas", kg: "KG" };
   var root = document.getElementById("root");
@@ -277,82 +284,114 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
     function copiaLimpa() { copiaBox.replaceChildren(); }
     function irPara(d) { S.dia = d; copiaLimpa(); self.show(); }
 
-  function baixarExcel() {
-  var os = ordensDoDia();
-  if (S.catFiltro && S.catFiltro !== "TODAS") {
-    os = os.filter(function(o){ return (o.categoria || "GERAL") === S.catFiltro; });
-  }
-  if (S.lojaFiltro && S.lojaFiltro !== "TODAS") {
-    os = os.filter(function(o){ return String(o.loja_id) === String(S.lojaFiltro); });
-  }
-  if (!os.length) { setMsg(mm, "Não há pedidos neste filtro."); return; }
+ function baixarExcel() {
   if (!window.XLSX) { setMsg(mm, "Não foi possível carregar o gerador de Excel.", "err"); return; }
+  var cat = S.catFiltro || "TODAS";
 
-  var linhas = [];
-  linhas.push(["Data: " + fmtData(S.dia), "", ""]);
-  linhas.push(["", "", ""]);
-  linhas.push(["Loja", "Produtos", "Observação"]);
-
-  S.lojas.forEach(function(l){
-    var das = os.filter(function(o){ return o.loja_id === l.id; });
-    if (!das.length) return;
-    var primeira = true;
-    das.forEach(function(o){
-      (o.itens || []).forEach(function(it){
-        linhas.push([primeira ? l.nome : "", it.qtd + " " + it.produto, primeira ? (o.obs || "") : ""]);
-        primeira = false;
-      });
+  // Lista do dropdown - so da categoria escolhida
+  var produtos = [];
+  if (cat && cat !== "TODAS" && PRODUTOS_POR_CATEGORIA[cat]) {
+    produtos = PRODUTOS_POR_CATEGORIA[cat];
+  } else {
+    Object.keys(PRODUTOS_POR_CATEGORIA).forEach(function(k){
+      PRODUTOS_POR_CATEGORIA[k].forEach(function(p){ if (produtos.indexOf(p) === -1) produtos.push(p); });
     });
-    linhas.push(["", "", ""]); // ESPAÇO entre lojas
+  }
+
+  // OPCAO A: so pedidos da categoria escolhida
+  var os = ordensDoDia();
+  if (cat && cat !== "TODAS") {
+    os = os.filter(function(o){ return (o.categoria || "") === cat; });
+  }
+  if (!os.length) { setMsg(mm, "Não há pedidos de " + cat + " neste dia.", "err"); return; }
+
+  // Agrupa itens por loja_id
+  var itensPorLojaId = {};
+  os.forEach(function(o){
+    if (!itensPorLojaId[o.loja_id]) itensPorLojaId[o.loja_id] = [];
+    (o.itens || []).forEach(function(it){
+      itensPorLojaId[o.loja_id].push({ qtd: it.qtd, produto: it.produto });
+    });
   });
+  // Acha id da loja pelo nome
+  function idDaLoja(nome){
+    var achada = (S.lojas || []).find(function(l){ return String(l.nome||"").trim().toUpperCase() === String(nome).trim().toUpperCase(); });
+    return achada ? achada.id : null;
+  }
+
+  // Aba DADOS_PRODUTOS
+  var dados = [["PRODUTOS (lista usada no dropdown) - EDITAVEL"]];
+  produtos.forEach(function(p){ dados.push([p]); });
+  var wsDados = XLSX.utils.aoa_to_sheet(dados);
+  wsDados["!cols"] = [{ wch: 38 }];
+  wsDados["A1"].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } } };
+
+  // Aba PEDIDO - 11 lojas, preenchida
+  var linhas = [];
+  linhas.push(["PEDIDOS WEST CARNES"]);
+  linhas.push(["Data do pedido: " + fmtData(S.dia) + "  |  Categoria: " + cat + "  |  QTD = ex: 60KG, 1CX, 10 UND"]);
+  var validacoes = [];
+  var LINHAS_POR_LOJA = 25;
+  var ultimoFim = 2;
+
+  for (var g = 0; g < 4; g++) {
+    var linhaLoja = ultimoFim;
+    var linhaCab = linhaLoja + 1;
+    var linhaIni = linhaCab + 1;
+    var linhaFim = linhaIni + LINHAS_POR_LOJA - 1;
+    while (linhas.length <= linhaFim) linhas.push(["","","","","","","","",""]);
+    for (var b = 0; b < 3; b++) {
+      var idx = g * 3 + b;
+      if (idx >= LOJAS_MODELO.length) continue;
+      var nomeLojaAtual = LOJAS_MODELO[idx];
+      var c0 = b * 3;
+      linhas[linhaLoja][c0] = nomeLojaAtual;
+      linhas[linhaCab][c0] = "QTD";
+      linhas[linhaCab][c0+1] = "PRODUTO";
+      linhas[linhaCab][c0+2] = "VISTO";
+      // Preenche com os pedidos reais dessa loja
+      var idLoja = idDaLoja(nomeLojaAtual);
+      var itens = (idLoja != null && itensPorLojaId[idLoja]) ? itensPorLojaId[idLoja] : [];
+      for (var i = 0; i < itens.length && i < LINHAS_POR_LOJA; i++) {
+        linhas[linhaIni + i][c0] = itens[i].qtd;
+        linhas[linhaIni + i][c0+1] = itens[i].produto;
+        linhas[linhaIni + i][c0+2] = "";
+      }
+      var colLetra = XLSX.utils.encode_col(c0+1);
+      validacoes.push({ sqref: colLetra + (linhaIni+1) + ":" + colLetra + (linhaFim+1), type: "list", formula1: "'DADOS_PRODUTOS'!$A$2:$A$" + (produtos.length + 1), allowBlank: true, showDropDown: false, showErrorMessage: false });
+    }
+    ultimoFim = linhaFim + 2;
+  }
 
   var ws = XLSX.utils.aoa_to_sheet(linhas);
-  ws["!cols"] = [{ wch: 14 }, { wch: 38 }, { wch: 30 }];
-  ws["!pageSetup"] = { orientation: "portrait", paperSize: 9, fitToPage: 1, fitToWidth: 1, fitToHeight: 0 };
-  ws["!printOptions"] = { horizontalCentered: true };
-  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+  ws["!cols"] = [{wch:12},{wch:38},{wch:12},{wch:12},{wch:38},{wch:12},{wch:12},{wch:38},{wch:12}];
+  ws["!merges"] = [{s:{r:0,c:0},e:{r:0,c:8}}, {s:{r:1,c:0},e:{r:1,c:8}}];
+  ws["!dataValidations"] = validacoes;
+  ws["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToPage: 1, fitToWidth: 1, fitToHeight: 0 };
+  ws["!freeze"] = { xSplit: 0, ySplit: 3, topLeftCell: "A4" };
 
-  var borda = {
-    top: { style: "thin", color: { rgb: "B0B0B0" } },
-    bottom: { style: "thin", color: { rgb: "B0B0B0" } },
-    left: { style: "thin", color: { rgb: "B0B0B0" } },
-    right: { style: "thin", color: { rgb: "B0B0B0" } }
-  };
+  var borda = { top:{style:"thin",color:{rgb:"B0B0B0"}}, bottom:{style:"thin",color:{rgb:"B0B0B0"}}, left:{style:"thin",color:{rgb:"B0B0B0"}}, right:{style:"thin",color:{rgb:"B0B0B0"}} };
   var range = XLSX.utils.decode_range(ws["!ref"]);
   for (var r = 0; r <= range.e.r; r++) {
-    for (var c = 0; c <= 2; c++) {
-      var addr = XLSX.utils.encode_cell({ r: r, c: c });
+    for (var c = 0; c <= 8; c++) {
+      var addr = XLSX.utils.encode_cell({r:r,c:c});
       var cell = ws[addr];
       if (!cell) continue;
       cell.s = cell.s || {};
-      if (r === 0) {
-        cell.s.font = { bold: true, sz: 14 };
-        cell.s.alignment = { horizontal: "left", vertical: "center" };
-      } else if (r === 2) {
-        cell.s.font = { bold: true, sz: 11, color: { rgb: "FFFFFF" } };
-        cell.s.fill = { fgColor: { rgb: "0A0A0A" } };
-        cell.s.alignment = { horizontal: "center", vertical: "center" };
-        cell.s.border = borda;
-      } else if (r > 2) {
-        var v0 = ws[XLSX.utils.encode_cell({ r: r, c: 0 })];
-        var v1 = ws[XLSX.utils.encode_cell({ r: r, c: 1 })];
-        var v2 = ws[XLSX.utils.encode_cell({ r: r, c: 2 })];
-        var ehEspaco = (!v0 || !v0.v) && (!v1 || !v1.v) && (!v2 || !v2.v);
-        if (ehEspaco) continue;
-        cell.s.font = { sz: 11 };
-        cell.s.border = borda;
-        cell.s.alignment = { vertical: "center", wrapText: true, horizontal: c === 0 ? "center" : "left" };
-        if (r % 2 === 0) cell.s.fill = { fgColor: { rgb: "F2F2F2" } };
-      }
+      if (r === 0) { cell.s.font = { bold:true, sz:16, color:{rgb:"1F4E78"} }; cell.s.alignment = { horizontal:"center" }; }
+      else if (r === 1) { cell.s.font = { sz:10, italic:true }; cell.s.alignment = { horizontal:"center", wrapText:true }; }
+      else if (cell.v && LOJAS_MODELO.indexOf(cell.v) !== -1) { cell.s.font = { bold:true, color:{rgb:"FFFFFF"}, sz:11 }; cell.s.fill = { fgColor:{rgb:"1F4E78"} }; cell.s.alignment = { horizontal:"center" }; cell.s.border = borda; }
+      else if (cell.v === "QTD" || cell.v === "PRODUTO" || cell.v === "VISTO") { cell.s.font = { bold:true, sz:9 }; cell.s.fill = { fgColor:{rgb:"D9E2F3"} }; cell.s.alignment = { horizontal:"center" }; cell.s.border = borda; }
+      else if (r > 2) { cell.s.border = borda; cell.s.alignment = { horizontal:"center" }; }
     }
   }
-  ws["!rows"] = [{ hpt: 24 }, { hpt: 8 }, { hpt: 20 }];
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
-  XLSX.writeFile(wb, "pedidos-" + S.dia + ".xlsx");
-  setMsg(mm, "Planilha gerada.", "ok");
-}
 
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsDados, "DADOS_PRODUTOS");
+  XLSX.utils.book_append_sheet(wb, ws, "PEDIDO");
+  XLSX.writeFile(wb, "pedido-" + (cat === "TODAS" ? "todas" : cat.toLowerCase()) + "-" + S.dia + ".xlsx");
+  setMsg(mm, "Planilha gerada: 11 lojas, categoria " + cat + ".", "ok");
+}
 
     var self = {
       el: h("section", { class: "stack" },
@@ -743,30 +782,3 @@ window.excluirPedido = excluirPedido;
 
 
 
-function baixarExcel(){
-  sb.from("pedidos").select("*").order("created_at", {ascending: false}).then(function(r){
-    if(r.error){ alert("Erro ao baixar: " + r.error.message); return; }
-    var dados = r.data || [];
-    if(!dados.length){ alert("Nenhum pedido para baixar"); return; }
-    var colunas = Object.keys(dados[0]);
-    var linhas = [];
-    linhas.push(colunas.join(";"));
-    dados.forEach(function(p){
-      var linha = colunas.map(function(c){
-        var v = p[c] == null ? "" : String(p[c]).replace(/;/g, ",").replace(/\n/g, " ");
-        return '"' + v + '"';
-      });
-      linhas.push(linha.join(";"));
-    });
-    var csv = "\uFEFF" + linhas.join("\n");
-    var blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "pedidos.xls";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  });
-}
