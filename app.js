@@ -358,11 +358,12 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
         linhas[linhaIni + i][c0+2] = "";
       }
    var colLetra = XLSX.utils.encode_col(c0+1);
-ws['!dataValidations'].push({
+validacoes.push({
   sqref: colLetra + (linhaIni+1) + ":" + colLetra + (linhaIni+LINHAS_POR_LOJA),
   type: "list",
   formula1: "'DADOS_PRODUTOS'!$B$2:$B$27"
 });
+    }
     ultimoFim = linhaFim + 2;
   }
 
