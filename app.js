@@ -731,6 +731,15 @@ async function adicionar() {
         : await sb.from("estoque").select("*").eq("loja_id", lojaId).order("produto");
       if (my !== tok) return;
       if (r.error) { falha = true; setMsg(mm, erroDb(r.error), "err"); } else dados = r.data || [];
+      if (tipo === "estoque") {
+  var cats = [...new Set((Array.isArray(dados) ? dados : []).map(function (r) { return r.categoria || "Sem categoria"; }))].sort();
+  var atual = relCat;
+  selCat.innerHTML = "";
+  var optTodas = document.createElement("option"); optTodas.value = "todas"; optTodas.textContent = "Todas as categorias"; selCat.appendChild(optTodas);
+  cats.forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = c; selCat.appendChild(o); });
+  selCat.value = atual;
+  if (selCat.value !== atual) { relCat = "todas"; selCat.value = "todas"; }
+}
       pintar();
     }
     function baixar() {
