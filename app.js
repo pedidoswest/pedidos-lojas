@@ -735,7 +735,7 @@ async function adicionar() {
       selLoja.value = String(lojaId);
       bPed.setAttribute("aria-pressed", String(tipo === "pedido"));
       bEst.setAttribute("aria-pressed", String(tipo === "estoque"));
-      navDia.hidden = tipo !== "pedido";
+     navDia.hidden = false;
       if (document.activeElement !== data) data.value = dia;
     }
     function pintar() {
