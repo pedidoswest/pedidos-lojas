@@ -358,7 +358,7 @@ h("button", { type: "button", class: "btn", onclick: function(){ excluirPedido (
         linhas[linhaIni + i][c0+2] = "";
       }
       var colLetra = XLSX.utils.encode_col(c0+1);
-      validacoes.push({ sqref: colLetra + (linhaIni+1) + ":" + colLetra + (linhaFim+1), type: "list", formula1: "'DADOS_PRODUTOS'!$A$2:$A$" + (produtos.length + 1), allowBlank: true, showDropDown: false, showErrorMessage: false });
+        formula1: "'DADOS_PRODUTOS'!$B$2:$B$27",
     }
     ultimoFim = linhaFim + 2;
   }
