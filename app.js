@@ -561,7 +561,7 @@ validacoes.push({
   h("option", { value: "PAO DE ALHO/QUEIJO COALHO" }, "PÃO DE ALHO / QUEIJO COALHO"),
   h("option", { value: "CARVAO" }, "CARVÃO"),
   h("option", { value: "CAMARA FRIA" }, "CÂMARA FRIA")
-);
+);inCat.onchange = function() { pintar(); };
 var inProd = h("input", { id: "est-prod", placeholder: "Produto" });
 var inQtd = h("input", { id: "est-qtd", placeholder: "Qtd", type: "number", inputMode: "decimal" });
 var inUn = h("select", { id: "est-un" },
@@ -586,7 +586,7 @@ var inUn = h("select", { id: "est-un" },
       if (falha && rows === null) { lista.append(h("p", { class: "empty", text: "Não foi possível carregar o estoque. Confira a internet e recarregue." })); pintarResumo(); return; }
       if (rows === null) { lista.append(h("p", { class: "empty", text: "Carregando…" })); return; }
       if (!rows.length) lista.append(h("p", { class: "empty", text: "Nenhum produto no estoque. Adicione o primeiro acima." }));
-      rows.forEach(function (r) { lista.append(linha(r)); });
+     rows.filter(function (r) { return (r.categoria || "").toUpperCase() === inCat.value; }).forEach(function (r) { lista.append(linha(r)); });
       pintarResumo();
     }
     function linha(r) {
