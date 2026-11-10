@@ -642,7 +642,28 @@ return el;
 
   // Apaga o que tem mais de 7 dias
   await sb.from("estoque").delete().eq("loja_id", lojaId).lt("data_ref", limiteStr);
-
+// COPIA OS PRODUTOS DO ÚLTIMO DIA PARA HOJE COM QUANTIDADE 0
+var rHoje = await sb.from("estoque").select("id").eq("loja_id", lojaId).eq("data_ref", data).limit(1);
+if (!rHoje.error && (!rHoje.data || rHoje.data.length === 0)) {
+  var rAnt = await sb.from("estoque").select("*").eq("loja_id", lojaId).lt("data_ref", data).order("data_ref", { ascending: false }).limit(100);
+  if (!rAnt.error && rAnt.data && rAnt.data.length > 0) {
+    var ultimoDia = rAnt.data[0].data_ref;
+    var vistos = {};
+    var paraInserir = [];
+    for (var i = 0; i < rAnt.data.length; i++) {
+      var p = rAnt.data[i];
+      if (p.data_ref !== ultimoDia) break;
+      var chave = (p.produto + "|" + p.categoria).toLowerCase();
+      if (!vistos[chave]) {
+        vistos[chave] = true;
+        paraInserir.push({ loja_id: lojaId, data_ref: data, produto: p.produto, categoria: p.categoria, unidade: p.unidade, quantidade: 0 });
+      }
+    }
+    if (paraInserir.length > 0) {
+      await sb.from("estoque").insert(paraInserir);
+    }
+  }
+}
   var r = await sb.from("estoque").select("*").eq("loja_id", lojaId).eq("data_ref", data).order("categoria").order("produto");
   if (r.error) { falha = true; setMsg(m, erroDb(r.error), "err"); }
   else { falha = false; rows = r.data || []; }
