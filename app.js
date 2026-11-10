@@ -692,10 +692,11 @@ async function adicionar() {
 
   /* ---------- admin: relatório por loja (PEDIDO ou ESTOQUE) ---------- */
   function buildRelatorio() {
-    var lojaId = S.lojas.length ? S.lojas[0].id : 1, tipo = "pedido", dia = hoje(), dados = null, falha = false, tok = 0;
+    var lojaId = S.lojas.length ? S.lojas[0].id : 1, tipo = "pedido", dia = hoje(), dados = null, relCat = "todas", falha = false, tok = 0;
     var mm = h("span", { class: "msg small", role: "status" });
     var rel = h("div", { class: "relatorio" });
     var selLoja = h("select", { class: "in", id: "rel-loja", "aria-label": "Loja", onchange: function (e) { lojaId = Number(e.target.value); carregar(); } });
+    var selCat = h("select", { class: "in", id: "rel-cat", "aria-label": "Categoria", onchange: function (e) { relCat = e.target.value; carregar(); } }, [h("option", { value: "todas" }, "Todas as categorias")]);
     var bPed = h("button", { type: "button", class: "seg", onclick: function () { setTipo("pedido"); } }, "PEDIDO");
     var bEst = h("button", { type: "button", class: "seg", onclick: function () { setTipo("estoque"); } }, "ESTOQUE");
     var data = h("input", { type: "date", class: "in", id: "rel-dia", "aria-label": "Dia dos pedidos", onchange: function (e) { if (e.target.value) { dia = e.target.value; carregar(); } } });
@@ -737,11 +738,18 @@ async function adicionar() {
       if (tipo === "pedido") {
         var os = dados.filter(function (o) { return Array.isArray(o.itens); });
         salvarXlsx(HEAD, linhasDe(os), [11, 14, 12, 36, 10, 28, 7, 12, 22, 18], "Pedidos", "pedidos-" + slug(nomeLoja(lojaId)) + "-" + dia + ".xlsx", mm);
-      } else exportarEstoque(lojaId, dados, mm);
+      } else exportarEstoque(lojaId, (tipo === "estoque" && relCat !== "todas" ? dados.filter(function (r) { return (r.categoria || "Sem categoria") === relCat; }) : dados), mm);
     }
     function imprimir() {
       if (!dados) { setMsg(mm, "Aguarde o relatório carregar.", "err"); return; }
-      window.print();
+      if (tipo === "estoque" && relCat !== "todas") {
+  var lista = dados.filter(function (r) { return (r.categoria || "Sem categoria") === relCat; });
+  if (!lista.length) { setMsg(mm, "Não há produtos nessa categoria.", "err"); return; }
+  var w = window.open("", "_blank");
+  w.document.write("<h2>Relatório de Estoque - " + relCat + "</h2><table border='1' cellpadding='6' style='border-collapse:collapse;width:100%'><tr><th>Produto</th><th>Categoria</th><th>Qtd</th><th>Unidade</th></tr>" + lista.map(function (r) { return "<tr><td>" + r.produto + "</td><td>" + (r.categoria || "") + "</td><td>" + r.quantidade + "</td><td>" + (r.unidade || "") + "</td></tr>"; }).join("") + "</table>");
+  w.document.close(); w.print(); return;
+}
+window.print();
     }
 
     var el = h("section", { class: "stack" },
@@ -749,6 +757,7 @@ async function adicionar() {
         h("h2", { text: "Relatório por loja" }),
         h("div", { class: "rel-ctl" },
           h("div", null, h("label", { class: "lbl", for: "rel-loja" }, "Loja"), selLoja),
+          h("div", null, h("label", { class: "lbl", for: "rel-cat" }, "Categoria"), selCat),
           h("div", null, h("span", { class: "lbl" }, "O que ver"), h("div", { class: "segs", role: "group", "aria-label": "O que ver" }, bPed, bEst))),
         navDia,
         h("div", { class: "bar" },
