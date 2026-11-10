@@ -13,7 +13,7 @@ var PRODUTOS_POR_CATEGORIA = {
   "PÃO DE ALHO / QUEIJO COALHO": ["PAO DE ALHO TRADICIONAL","PAO DE ALHO APIM","PAO DE ALHO BOLA","QUEIJO COALHO"]
 };
   var LIM_CX = 9, LIM_KG = 80;               // estoque em excesso: mais de 9 caixas ou mais de 80 KG
-  var UNID = { cx: "Caixas", kg: "KG" };
+var UNID = { cx: "Caixas", kg: "KG", un: "UN", unidade: "UN", UN: "UN", UNIDADE: "UN", CX: "Caixas", KG: "KG" };
   var root = document.getElementById("root");
   var sb = null;
   var S = { perfil: null, lojas: [], acessos: [], aba: "", dia: hoje(), soUrgentes: false, ordens: [], carregouDia: false };
