@@ -593,8 +593,11 @@ var inUn = h("select", { id: "est-un" },
       var el = h("div", { class: "est-row" });
       var flag = h("span", { class: "est-flag" });
       var q = h("input", { class: "in qtd", value: String(Number(r.quantidade)).replace(".", ","), inputmode: "decimal", autocomplete: "off", "aria-label": "Quantidade de " + r.produto, onchange: salvar });
-      var u = h("select", { class: "in", "aria-label": "Unidade de " + r.produto, onchange: salvar }, h("option", { value: "cx" }, UNID.cx), h("option", { value: "kg" }, UNID.kg));
-      u.value = r.unidade;
+     var u = h("select", { class: "in", "aria-label": "Unidade de " + r.produto, onchange: salvar },
+  h("option", { value: "cx" }, "Caixas"),
+  h("option", { value: "kg" }, "KG"),
+  h("option", { value: "un" }, "UNIDADE"));
+u.value = (r.unidade || "").toLowerCase();
       var rem = h("button", { type: "button", class: "rem", "aria-label": "Remover " + r.produto, onclick: remover }, "×");
       function marca() {
         var ex = isExcesso(r.quantidade, r.unidade);
