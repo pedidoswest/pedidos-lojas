@@ -562,13 +562,13 @@ validacoes.push({
   h("option", { value: "CARVAO" }, "CARVÃO"),
   h("option", { value: "CAMARA FRIA" }, "CÂMARA FRIA")
 );
-var inProd = h("input", { id: "est-prod", placeholder: "Produto", ... }),
-    inQtd = h("input", { id: "est-qtd", ... }),
-    inUn = h("select", { id: "est-un" },
-      h("option", { value: "cx" }, "CAIXA"),
-      h("option", { value: "kg" }, "KG"),
-      h("option", { value: "un" }, "UNIDADE")
-    );
+var inProd = h("input", { id: "est-prod", placeholder: "Produto" });
+var inQtd = h("input", { id: "est-qtd", placeholder: "Qtd", type: "number", inputMode: "decimal" });
+var inUn = h("select", { id: "est-un" },
+  h("option", { value: "cx" }, "CAIXA"),
+  h("option", { value: "kg" }, "KG"),
+  h("option", { value: "un" }, "UNIDADE")
+);
     inProd.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inQtd.focus(); } });
     inQtd.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); adicionar(); } });
 
