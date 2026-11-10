@@ -722,7 +722,7 @@ async function adicionar() {
       rel.replaceChildren();
       if (falha) { rel.append(h("p", { class: "empty", text: "Não foi possível carregar o relatório." })); return; }
       if (dados === null) { rel.append(h("p", { class: "empty", text: "Carregando…" })); return; }
-      rel.append(tipo === "pedido" ? relPedidos(lojaId, dia, dados) : relEstoque(lojaId, dados));
+    rel.append(tipo === "pedido" ? relPedidos(lojaId, dia, dados) : relEstoque(lojaId, (tipo === "estoque" && relCat !== "todas" ? dados.filter(function (r) { return (r.categoria || "Sem categoria") === relCat; }) : dados)));
     }
     async function carregar() {
       var my = ++tok; dados = null; falha = false; setMsg(mm, ""); pintar();
