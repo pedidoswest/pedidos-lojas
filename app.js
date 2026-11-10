@@ -673,6 +673,7 @@ async function adicionar() {
         h("div", { class: "bar" }, h("h2", { class: "grow", text: "Estoque" }), h("strong", { class: "muted small", text: nomeLoja(lojaId) })),
         resumo,
         h("div", { class: "est-add" },
+          h("div", null, h("label", { class: "lbl", for: "est-cat" }, "Categoria"), inCat),
           h("div", null, h("label", { class: "lbl", for: "est-prod" }, "Produto"), inProd),
           h("div", null, h("label", { class: "lbl", for: "est-qtd" }, "Quantidade"), inQtd),
           h("div", null, h("label", { class: "lbl", for: "est-un" }, "Unidade"), inUn),
