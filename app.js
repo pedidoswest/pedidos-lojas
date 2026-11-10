@@ -582,7 +582,7 @@ var inUn = h("select", { id: "est-un" },
       rel.append(relEstoque(lojaId, rows));
     }
     function pintar() {
-      lista.replaceChildren();h("option", { value: "un" }, "UNIDADE")
+      lista.replaceChildren();
       if (falha && rows === null) { lista.append(h("p", { class: "empty", text: "Não foi possível carregar o estoque. Confira a internet e recarregue." })); pintarResumo(); return; }
       if (rows === null) { lista.append(h("p", { class: "empty", text: "Carregando…" })); return; }
       if (!rows.length) lista.append(h("p", { class: "empty", text: "Nenhum produto no estoque. Adicione o primeiro acima." }));
@@ -611,12 +611,26 @@ var inUn = h("select", { id: "est-un" },
         r.quantidade = res.data[0].quantidade; r.unidade = res.data[0].unidade; r.atualizado_em = res.data[0].atualizado_em;
         marca(); pintarResumo(); setMsg(m, "Salvo: " + r.produto + ".", "ok");
       }
-      async function remover() {
-        if (!rem.dataset.conf) {
+async function remover() {
+  if (!rem.dataset.conf) {
+    rem.dataset.conf = "1";
+    rem.textContent = "Confirmar?";
+    rem.classList.add("conf");
+    setTimeout(function () { delete rem.dataset.conf; rem.textContent = "×"; rem.classList.remove("conf"); }, 3400);
+    return;
+  }
+  var res = await sb.from("estoque").delete().eq("id", r.id);
+  if (res.error) { setMsg(m, erroDb(res.error), "err"); return; }
+  rows = rows.filter(function (x) { return x.id !== r.id; });
+  pintar();
+  setMsg(m, "Removido: " + r.produto + ".", "ok");
+}
+
+// FECHA a linha() aqui:
 el.append(h("span", { class: "est-cat", text: r.categoria || "" }), h("strong", { class: "est-nome", text: r.produto }), q, u, flag, rem);
-          setTimeout(function () { delete rem.dataset.conf; rem.textContent = "×"; rem.classList.remove("conf"); }, 3400);
-          return;
-        }
+marca();
+return el;
+} // <-- fim da linha(r)
       async function carregar() {
   var data = S.dia;
   var hoje = new Date(); hoje.setHours(0,0,0,0);
