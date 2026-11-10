@@ -749,7 +749,7 @@ async function adicionar() {
       var my = ++tok; dados = null; falha = false; setMsg(mm, ""); pintar();
       var r = tipo === "pedido"
         ? await sb.from("pedidos").select("*").eq("loja_id", lojaId).eq("data", dia).order("criado_em")
-        : await sb.from("estoque").select("*").eq("loja_id", lojaId).order("produto");
+: await sb.from("estoque").select("*").eq("loja_id", lojaId).eq("data_ref", dia).order("produto");
       if (my !== tok) return;
       if (r.error) { falha = true; setMsg(mm, erroDb(r.error), "err"); } else dados = r.data || [];
       if (tipo === "estoque") {
