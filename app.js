@@ -660,7 +660,18 @@ if (!rHoje.error && (!rHoje.data || rHoje.data.length === 0)) {
       }
     }
     if (paraInserir.length > 0) {
-await sb.from("estoque").upsert(paraInserir, { onConflict: "loja_id,data_ref,produto,categoria" });
+if (paraInserir.length > 0) {
+  var visto = {};
+  var unicos = paraInserir.filter(function(p) {
+    var k = p.loja_id + "|" + p.data_ref + "|" + p.produto.toLowerCase() + "|" + p.categoria;
+    if (visto[k]) return false;
+    visto[k] = true;
+    return true;
+  });
+  for (var i = 0; i < unicos.length; i++) {
+    await sb.from("estoque").upsert(unicos[i], { onConflict: "loja_id,data_ref,produto,categoria" });
+  }
+}
     }
   }
 }
