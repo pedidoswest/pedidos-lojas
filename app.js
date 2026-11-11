@@ -659,22 +659,7 @@ if (!rHoje.error && (!rHoje.data || rHoje.data.length === 0)) {
         paraInserir.push({ loja_id: lojaId, data_ref: data, produto: p.produto, categoria: p.categoria, unidade: p.unidade, quantidade: 0 });
       }
     }
-    if (paraInserir.length > 0) {
-if (paraInserir.length > 0) {
-  var visto = {};
-  var unicos = paraInserir.filter(function(p) {
-    var k = p.loja_id + "|" + p.data_ref + "|" + p.produto.toLowerCase() + "|" + p.categoria;
-    if (visto[k]) return false;
-    visto[k] = true;
-    return true;
-  });
-  for (var i = 0; i < unicos.length; i++) {
-    await sb.from("estoque").upsert(unicos[i], { onConflict: "loja_id,data_ref,produto,categoria" });
-  }
-}
-    }
-  }
-}
+// copia automatica desativada - estava dando 409
   var r = await sb.from("estoque").select("*").eq("loja_id", lojaId).eq("data_ref", data).order("categoria").order("produto");
   if (r.error) { falha = true; setMsg(m, erroDb(r.error), "err"); }
   else { falha = false; rows = r.data || []; }
