@@ -665,6 +665,8 @@ if (!rHoje.error && (!rHoje.data || rHoje.data.length === 0)) {
   else { falha = false; rows = r.data || []; }
   pintar();
 }
+}
+      } 
 
 async function adicionar() {
   inProd.classList.remove("bad"); inQtd.classList.remove("bad");
