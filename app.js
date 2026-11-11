@@ -654,8 +654,6 @@ return el;
   }
   pintar();
 }
-}
-      } 
 
 async function adicionar() {
   inProd.classList.remove("bad"); inQtd.classList.remove("bad");
