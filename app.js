@@ -126,7 +126,7 @@ var UNID = { cx: "Caixas", kg: "KG", un: "UN", unidade: "UN", UN: "UN", UNIDADE:
     root.replaceChildren(
       h("header", { class: "top" },
         h("div", null, h("h1", { text: "Pedidos das Lojas" }), elSub),
-h("button", { type: "button", class: "btn ghost no-print", onclick: async function () { try { await sb.auth.signOut(); } catch (e) {} try { localStorage.clear(); sessionStorage.clear(); } catch (e) {} location.reload(); } }, "Sair"),
+h("button", { type: "button", class: "btn ghost no-print", onclick: async function () { try { await sb.auth.signOut(); } catch (e) {} try { localStorage.clear(); sessionStorage.clear(); } catch (e) {} location.reload(); } }, "Sair")),
       elTabs, elMain);
     elSub.textContent = (p.is_admin ? "Administração" : nomeLoja(p.loja_id)) + " · " + diaSemana(hoje()) + ", " + fmtData(hoje()).slice(0, 5);
     trocarAba(S.aba);
