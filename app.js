@@ -660,7 +660,7 @@ if (!rHoje.error && (!rHoje.data || rHoje.data.length === 0)) {
       }
     }
     if (paraInserir.length > 0) {
-      await sb.from("estoque").insert(paraInserir);
+await sb.from("estoque").upsert(paraInserir, { onConflict: "loja_id,data_ref,produto,categoria" });
     }
   }
 }
