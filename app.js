@@ -648,20 +648,42 @@ return el;
   if (r.error) {
     falha = true;
     rows = [];
-  } else {
-    falha = false;
-    rows = r.data || [];
+    pintar();
+    return;
+  }
+  falha = false;
+  rows = r.data || [];
+
+  // Virada do dia - se hoje esta vazio, copia os produtos de ontem com quantidade 0
+  if (rows.length === 0) {
+    var ant = await sb.from("estoque").select("*").eq("loja_id", lojaId).lt("data_ref", data).order("data_ref", { ascending: false }).limit(500);
+    if (ant.data && ant.data.length) {
+      var ultimoDia = ant.data[0].data_ref;
+      var copiar = ant.data.filter(function (x) { return x.data_ref === ultimoDia; });
+      var vistos = {};
+      var novos = [];
+      copiar.forEach(function (x) {
+        var k = (x.categoria || "") + "|" + String(x.produto).toLowerCase();
+        if (!vistos[k]) {
+          vistos[k] = 1;
+          novos.push({ loja_id: lojaId, produto: x.produto, quantidade: 0, unidade: x.unidade, categoria: x.categoria, data_ref: data });
+        }
+      });
+      if (novos.length) {
+        var ins = await sb.from("estoque").insert(novos).select();
+        if (ins.data) rows = ins.data;
+      }
+    }
   }
   pintar();
 }
-
-
 async function adicionar() {
   inProd.classList.remove("bad"); inQtd.classList.remove("bad");
   var prod = inProd.value.trim(), q = num(inQtd.value);
   if (!prod) { inProd.classList.add("bad"); setMsg(m, "Informe o produto.", "err"); return; }
   if (inQtd.value.trim() === "" || !isFinite(q) || q < 0) { inQtd.classList.add("bad"); setMsg(m, "Informe uma quantidade válida.", "err"); return; }
-  if (rows === null) { setMsg(m, "Aguarde o carregamento.", "err"); return; }
+ if (rows === null) { await carregar(); }
+if (rows === null) rows = [];
   var cat = inCat.value;
   var ja = rows.find(function (r) { return r.produto.trim().toLowerCase() === prod.toLowerCase() && r.categoria === cat; });
   add.disabled = true; setMsg(m, "Salvando...");
