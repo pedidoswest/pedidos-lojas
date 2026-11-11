@@ -680,7 +680,7 @@ async function adicionar() {
   var data = S.dia;
   var res = ja
     ? await sb.from("estoque").update({ quantidade: q, unidade: inUn.value, categoria: cat, data_ref: data }).eq("id", ja.id).select()
-    : await sb.from("estoque").upsert({ loja_id: lojaId, produto: prod, quantidade: q, unidade: inUn.value, categoria: cat, data_ref: data }, { onConflict: "loja_id,data_ref,produto,categoria" }).select();
+    : await sb.from("estoque").upsert({ loja_id: lojaId, produto: prod, quantidade: q, unidade: inUn.value, categoria: cat, data_ref: data }, { onConflict: "loja_id,produto" }).select();
   add.disabled = false;
   if (res.error || !res.data || !res.data.length) { setMsg(m, res.error ? erroDb(res.error) : "Você não tem permissão para salvar.", "err"); return; }
   inProd.value = ""; inQtd.value = "";
