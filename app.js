@@ -550,7 +550,7 @@ validacoes.push({
 
   /* ---------- loja: estoque ---------- */
   function buildEstoque() {
-    var lojaId = (typeof S.perfil.loja_id === "number" ? S.perfil.loja_id : idDaLoja(S.perfil.loja_id))
+    var lojaId = (typeof S.perfil.loja_id === "number" ? S.perfil.loja_id : idDaLoja(S.perfil.loja_id)), rows = null, falha = false;
     var m = h("span", { class: "msg grow", role: "status" });
     var resumo = h("div", { class: "bar" });
     var lista = h("div", { class: "est-lista" });
